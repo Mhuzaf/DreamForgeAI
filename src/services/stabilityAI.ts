@@ -21,6 +21,19 @@ export interface GeneratedImage {
   timestamp: string;
 }
 
+interface StabilityRequestBody {
+  text_prompts: Array<{
+    text: string;
+    weight: number;
+  }>;
+  cfg_scale: number;
+  height: number;
+  width: number;
+  samples: number;
+  steps: number;
+  seed?: number;
+}
+
 export const generateStabilityImage = async (params: StabilityImageParams): Promise<GeneratedImage[]> => {
   const {
     prompt,
@@ -33,7 +46,7 @@ export const generateStabilityImage = async (params: StabilityImageParams): Prom
     seed
   } = params;
 
-  const requestBody = {
+  const requestBody: StabilityRequestBody = {
     text_prompts: [
       {
         text: prompt,
