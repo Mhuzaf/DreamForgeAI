@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Menu, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -128,7 +127,6 @@ const Header = () => {
         onClose={() => setIsAuthModalOpen(false)}
         mode={authMode}
         onModeChange={setAuthMode}
-        onSuccess={handleAuthSuccess}
       />
     </>
   );

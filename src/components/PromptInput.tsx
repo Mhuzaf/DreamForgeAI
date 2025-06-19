@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Wand2, Sparkles, HelpCircle, Moon, Sun } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -23,7 +22,7 @@ interface GeneratedImage {
 const PromptInput = () => {
   const { settings, updateSetting } = useSettings();
   const { theme, toggleTheme } = useTheme();
-  const { credits, useCredits } = useCredits();
+  const { credits, useCredits: consumeCredits } = useCredits();
   const { toast } = useToast();
   
   const [prompt, setPrompt] = useState(settings.lastPrompt);
@@ -60,7 +59,7 @@ const PromptInput = () => {
     }
     
     const creditsNeeded = calculateCreditsNeeded();
-    if (!useCredits(creditsNeeded)) {
+    if (!consumeCredits(creditsNeeded)) {
       toast({
         title: "Insufficient Credits",
         description: `You need ${creditsNeeded} credits to generate this image. You have ${credits} credits remaining.`,
