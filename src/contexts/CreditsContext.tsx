@@ -22,7 +22,7 @@ interface CreditsProviderProps {
 }
 
 export const CreditsProvider = ({ children }: CreditsProviderProps) => {
-  const [credits, setCredits] = useState(50); // Start with 50 credits
+  const [credits, setCredits] = useState(25); // Changed from 50 to 25 credits
 
   const useCredits = (amount: number): boolean => {
     if (credits >= amount) {

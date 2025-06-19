@@ -10,14 +10,8 @@ import { useToast } from '../hooks/use-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCredits } from '../contexts/CreditsContext';
 import { useSettings } from '../hooks/useSettings';
+import { generateStabilityImage, type GeneratedImage, type StabilityImageParams } from '../services/stabilityAI';
 import Gallery from './Gallery';
-
-interface GeneratedImage {
-  id: string;
-  url: string;
-  prompt: string;
-  timestamp: string;
-}
 
 const PromptInput = () => {
   const { settings, updateSetting } = useSettings();
@@ -29,18 +23,6 @@ const PromptInput = () => {
   const [negativePrompt, setNegativePrompt] = useState(settings.negativePrompt);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-
-  // Mock image URLs for demonstration
-  const mockImageUrls = [
-    'https://images.unsplash.com/photo-1518709268805-4e9042af2176?w=500&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=500&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=500&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=500&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=500&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1501594907352-04cda38ebc29?w=500&h=500&fit=crop',
-    'https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=500&h=500&fit=crop'
-  ];
 
   const calculateCreditsNeeded = () => {
     const baseCredits = 1;
@@ -74,28 +56,40 @@ const PromptInput = () => {
     
     setIsGenerating(true);
     
-    // Simulate API call with realistic delay
-    setTimeout(() => {
-      const newImages: GeneratedImage[] = [];
-      const numImages = settings.imageAmount[0];
-      
-      for (let i = 0; i < numImages; i++) {
-        const imageUrl = mockImageUrls[Math.floor(Math.random() * mockImageUrls.length)];
-        newImages.push({
-          id: `img-${Date.now()}-${i}`,
-          url: imageUrl,
-          prompt: prompt,
-          timestamp: new Date().toLocaleString()
-        });
-      }
+    try {
+      const imageParams: StabilityImageParams = {
+        prompt: prompt,
+        negativePrompt: negativePrompt,
+        width: parseInt(settings.resolution[0]),
+        height: parseInt(settings.resolution[0]),
+        samples: settings.imageAmount[0],
+        cfgScale: settings.guidanceScale[0],
+        seed: settings.seed ? parseInt(settings.seed) : undefined
+      };
+
+      console.log('Generating images with params:', imageParams);
+      const newImages = await generateStabilityImage(imageParams);
       
       setGeneratedImages(prev => [...newImages, ...prev]);
       setIsGenerating(false);
+      
       toast({
         title: "Success!",
-        description: `Generated ${numImages} image${numImages > 1 ? 's' : ''} successfully.`
+        description: `Generated ${newImages.length} image${newImages.length > 1 ? 's' : ''} successfully.`
       });
-    }, 3000);
+    } catch (error) {
+      console.error('Image generation failed:', error);
+      setIsGenerating(false);
+      
+      // Refund credits on error
+      consumeCredits(-creditsNeeded);
+      
+      toast({
+        title: "Generation Failed",
+        description: error instanceof Error ? error.message : "Failed to generate images. Please try again.",
+        variant: "destructive"
+      });
+    }
   };
 
   const handleRegenerate = (regeneratePrompt: string) => {
@@ -367,12 +361,13 @@ const PromptInput = () => {
                   </Button>
                 </div>
 
+                {/* Loading Animation */}
                 {isGenerating && (
                   <div className="mt-6 animate-fade-in">
                     <div className="bg-gray-900/80 rounded-lg p-6 border border-gray-700">
                       <div className="flex items-center space-x-3 mb-4">
                         <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-white font-medium">Creating your masterpiece...</span>
+                        <span className="text-white font-medium">Creating your masterpiece with Stability AI...</span>
                       </div>
                       <div className="w-full bg-gray-700 rounded-full h-2">
                         <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
