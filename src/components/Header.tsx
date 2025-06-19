@@ -14,9 +14,9 @@ const Header = () => {
 
   const navItems = [
     { name: 'Home', href: '/' },
-    { name: 'Features', href: '#features' },
-    { name: 'Gallery', href: '#gallery' },
-    { name: 'About', href: '#about' },
+    { name: 'About', href: '/about' },
+    { name: 'FAQ', href: '/faq' },
+    { name: 'Contact', href: '/contact' },
   ];
 
   const handleLogin = () => {
@@ -41,6 +41,11 @@ const Header = () => {
     setIsAuthModalOpen(false);
   };
 
+  const handleNavigation = (href: string) => {
+    navigate(href);
+    setIsMenuOpen(false);
+  };
+
   return (
     <>
       <header className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-md border-b border-gray-800">
@@ -58,19 +63,13 @@ const Header = () => {
             {/* Desktop Navigation */}
             <nav className="hidden md:flex space-x-8">
               {navItems.map((item) => (
-                <a
+                <button
                   key={item.name}
-                  href={item.href}
-                  onClick={(e) => {
-                    if (item.href === '/') {
-                      e.preventDefault();
-                      navigate('/');
-                    }
-                  }}
+                  onClick={() => handleNavigation(item.href)}
                   className="text-gray-300 hover:text-white transition-colors duration-200 text-sm font-medium cursor-pointer"
                 >
                   {item.name}
-                </a>
+                </button>
               ))}
             </nav>
 
@@ -100,20 +99,13 @@ const Header = () => {
             <div className="md:hidden bg-gray-900 border-t border-gray-800 animate-fade-in">
               <div className="px-2 pt-2 pb-3 space-y-1">
                 {navItems.map((item) => (
-                  <a
+                  <button
                     key={item.name}
-                    href={item.href}
-                    onClick={(e) => {
-                      if (item.href === '/') {
-                        e.preventDefault();
-                        navigate('/');
-                      }
-                      setIsMenuOpen(false);
-                    }}
-                    className="block px-3 py-2 text-gray-300 hover:text-white transition-colors duration-200 text-base font-medium cursor-pointer"
+                    onClick={() => handleNavigation(item.href)}
+                    className="block px-3 py-2 text-gray-300 hover:text-white transition-colors duration-200 text-base font-medium cursor-pointer w-full text-left"
                   >
                     {item.name}
-                  </a>
+                  </button>
                 ))}
                 <div className="border-t border-gray-800 pt-2 mt-2">
                   <div className="px-3 py-2">
@@ -136,6 +128,7 @@ const Header = () => {
         onClose={() => setIsAuthModalOpen(false)}
         mode={authMode}
         onModeChange={setAuthMode}
+        onSuccess={handleAuthSuccess}
       />
     </>
   );
