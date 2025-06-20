@@ -2,6 +2,7 @@
 import Header from '../components/Header';
 import Hero from '../components/Hero';
 import PromptInput from '../components/PromptInput';
+import SubscriptionPlans from '../components/SubscriptionPlans';
 
 const Index = () => {
   return (
@@ -9,6 +10,7 @@ const Index = () => {
       <Header />
       <Hero />
       <PromptInput />
+      <SubscriptionPlans />
     </div>
   );
 };
