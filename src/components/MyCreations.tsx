@@ -4,6 +4,7 @@ import { Download, Trash2, Edit2, Calendar, Search } from 'lucide-react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import ImageModal from './ImageModal';
+import ContextMenuActions from './ContextMenuActions';
 
 interface Creation {
   id: string;
@@ -58,7 +59,12 @@ const MyCreations = () => {
     setCreations(creations.filter(creation => creation.id !== id));
   };
 
-  const handleRename = (id: string, newName: string) => {
+  const handleRename = (creation: Creation) => {
+    setEditingId(creation.id);
+    setEditName(creation.name || creation.prompt.slice(0, 30));
+  };
+
+  const saveRename = (id: string, newName: string) => {
     setCreations(creations.map(creation =>
       creation.id === id ? { ...creation, name: newName } : creation
     ));
@@ -83,11 +89,6 @@ const MyCreations = () => {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedImage(null);
-  };
-
-  const startEdit = (creation: Creation) => {
-    setEditingId(creation.id);
-    setEditName(creation.name || creation.prompt.slice(0, 30));
   };
 
   return (
@@ -128,110 +129,124 @@ const MyCreations = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {filteredCreations.map((creation) => (
-              <div
+              <ContextMenuActions
                 key={creation.id}
-                className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105"
+                creation={creation}
+                onRename={handleRename}
+                onDownload={handleDownload}
+                onDelete={handleDelete}
               >
-                <div
-                  className="aspect-square relative cursor-pointer group"
-                  onClick={() => handleImageClick(creation)}
-                >
-                  <img
-                    src={creation.url}
-                    alt={creation.name || creation.prompt}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
-                    <p className="text-white text-sm text-center px-4">
-                      Click to view full size
-                    </p>
+                <div className="bg-gray-800 rounded-lg overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 transform hover:scale-105 cursor-pointer">
+                  <div
+                    className="aspect-square relative group"
+                    onClick={() => handleImageClick(creation)}
+                  >
+                    <img
+                      src={creation.url}
+                      alt={creation.name || creation.prompt}
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <p className="text-white text-sm text-center px-4">
+                        Click to view • Right-click for options
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="p-4">
+                    {editingId === creation.id ? (
+                      <div className="space-y-2">
+                        <Input
+                          value={editName}
+                          onChange={(e) => setEditName(e.target.value)}
+                          className="bg-gray-700 border-gray-600 text-white text-sm"
+                          onKeyPress={(e) => {
+                            if (e.key === 'Enter') {
+                              saveRename(creation.id, editName);
+                            }
+                          }}
+                          autoFocus
+                        />
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => saveRename(creation.id, editName)}
+                            className="bg-green-600 hover:bg-green-700 text-white text-xs transition-colors duration-200"
+                          >
+                            Save
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setEditingId(null)}
+                            className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs transition-colors duration-200"
+                          >
+                            Cancel
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        <h3 className="text-white font-medium text-sm mb-1 truncate">
+                          {creation.name || 'Untitled'}
+                        </h3>
+                        <p className="text-gray-400 text-xs mb-2 line-clamp-2">
+                          {creation.prompt}
+                        </p>
+                        <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
+                          <span className="flex items-center">
+                            <Calendar className="w-3 h-3 mr-1" />
+                            {creation.timestamp}
+                          </span>
+                          <span className="bg-gray-700 px-2 py-1 rounded transition-colors duration-200">
+                            {creation.style}
+                          </span>
+                        </div>
+                      </>
+                    )}
+
+                    {editingId !== creation.id && (
+                      <div className="flex justify-between">
+                        <div className="flex gap-1">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleRename(creation);
+                            }}
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 p-1 h-auto transition-all duration-200"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDownload(creation);
+                            }}
+                            className="text-gray-400 hover:text-white hover:bg-gray-700 p-1 h-auto transition-all duration-200"
+                          >
+                            <Download className="w-3 h-3" />
+                          </Button>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDelete(creation.id);
+                          }}
+                          className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-auto transition-all duration-200"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </div>
-
-                <div className="p-4">
-                  {editingId === creation.id ? (
-                    <div className="space-y-2">
-                      <Input
-                        value={editName}
-                        onChange={(e) => setEditName(e.target.value)}
-                        className="bg-gray-700 border-gray-600 text-white text-sm"
-                        onKeyPress={(e) => {
-                          if (e.key === 'Enter') {
-                            handleRename(creation.id, editName);
-                          }
-                        }}
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => handleRename(creation.id, editName)}
-                          className="bg-green-600 hover:bg-green-700 text-white text-xs"
-                        >
-                          Save
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => setEditingId(null)}
-                          className="border-gray-600 text-gray-300 hover:bg-gray-700 text-xs"
-                        >
-                          Cancel
-                        </Button>
-                      </div>
-                    </div>
-                  ) : (
-                    <>
-                      <h3 className="text-white font-medium text-sm mb-1 truncate">
-                        {creation.name || 'Untitled'}
-                      </h3>
-                      <p className="text-gray-400 text-xs mb-2 line-clamp-2">
-                        {creation.prompt}
-                      </p>
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-3">
-                        <span className="flex items-center">
-                          <Calendar className="w-3 h-3 mr-1" />
-                          {creation.timestamp}
-                        </span>
-                        <span className="bg-gray-700 px-2 py-1 rounded">
-                          {creation.style}
-                        </span>
-                      </div>
-                    </>
-                  )}
-
-                  {editingId !== creation.id && (
-                    <div className="flex justify-between">
-                      <div className="flex gap-1">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => startEdit(creation)}
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 p-1 h-auto"
-                        >
-                          <Edit2 className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => handleDownload(creation)}
-                          className="text-gray-400 hover:text-white hover:bg-gray-700 p-1 h-auto"
-                        >
-                          <Download className="w-3 h-3" />
-                        </Button>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(creation.id)}
-                        className="text-red-400 hover:text-red-300 hover:bg-red-900/20 p-1 h-auto"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </div>
+              </ContextMenuActions>
             ))}
           </div>
         )}
