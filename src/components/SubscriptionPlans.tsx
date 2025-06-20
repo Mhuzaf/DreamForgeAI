@@ -1,34 +1,20 @@
+
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Check, Crown, Sparkles } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import { supabase } from '../integrations/supabase/client';
 
 const SubscriptionPlans = () => {
   const [loading, setLoading] = useState<string | null>(null);
   const { toast } = useToast();
   const { subscriptionTier, refreshSubscription } = useSubscription();
 
-  // Check if Supabase is configured
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
-  const isSupabaseConfigured = supabaseUrl && supabaseAnonKey;
-
   const handleSubscribe = async (plan: 'pro' | 'studio') => {
-    if (!isSupabaseConfigured) {
-      toast({
-        title: "Supabase Required",
-        description: "Please connect to Supabase to enable subscription features.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
       setLoading(plan);
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
       
       const { data: { session } } = await supabase.auth.getSession();
       
@@ -66,19 +52,7 @@ const SubscriptionPlans = () => {
   };
 
   const handleManageSubscription = async () => {
-    if (!isSupabaseConfigured) {
-      toast({
-        title: "Supabase Required",
-        description: "Please connect to Supabase to manage subscriptions.",
-        variant: "destructive"
-      });
-      return;
-    }
-
     try {
-      const { createClient } = await import('@supabase/supabase-js');
-      const supabase = createClient(supabaseUrl, supabaseAnonKey);
-      
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -126,7 +100,7 @@ const SubscriptionPlans = () => {
         'Basic social features'
       ],
       icon: <Sparkles className="w-6 h-6 text-blue-500" />,
-      current: !subscriptionTier
+      current: !subscriptionTier || subscriptionTier === 'Community'
     },
     {
       id: 'pro',
@@ -169,17 +143,8 @@ const SubscriptionPlans = () => {
   ];
 
   return (
-    <section className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-900 to-black">
+    <section id="pricing" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-gray-900 to-black">
       <div className="max-w-6xl mx-auto">
-        {!isSupabaseConfigured && (
-          <div className="mb-8 p-4 bg-yellow-900/50 border border-yellow-600 rounded-lg">
-            <p className="text-yellow-200 text-center">
-              <strong>Note:</strong> Subscription features require Supabase connection. 
-              Click the green Supabase button in the top right to connect your project.
-            </p>
-          </div>
-        )}
-        
         <div className="text-center mb-12">
           <h2 className="text-4xl font-bold mb-4">
             <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
@@ -237,13 +202,21 @@ const SubscriptionPlans = () => {
                 </ul>
                 
                 {plan.current ? (
-                  <Button
-                    onClick={handleManageSubscription}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white"
-                    disabled={!isSupabaseConfigured}
-                  >
-                    Manage Subscription
-                  </Button>
+                  subscriptionTier && subscriptionTier !== 'Community' ? (
+                    <Button
+                      onClick={handleManageSubscription}
+                      className="w-full bg-green-600 hover:bg-green-700 text-white"
+                    >
+                      Manage Subscription
+                    </Button>
+                  ) : (
+                    <Button
+                      disabled
+                      className="w-full bg-gray-600 text-gray-400 cursor-not-allowed"
+                    >
+                      Current Plan
+                    </Button>
+                  )
                 ) : plan.id === 'free' ? (
                   <Button
                     disabled
@@ -254,7 +227,7 @@ const SubscriptionPlans = () => {
                 ) : (
                   <Button
                     onClick={() => handleSubscribe(plan.id as 'pro' | 'studio')}
-                    disabled={loading === plan.id || !isSupabaseConfigured}
+                    disabled={loading === plan.id}
                     className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
                   >
                     {loading === plan.id ? 'Processing...' : `Subscribe to ${plan.name}`}
@@ -270,7 +243,6 @@ const SubscriptionPlans = () => {
             onClick={refreshSubscription}
             variant="outline"
             className="border-gray-600 text-gray-300 hover:bg-gray-700"
-            disabled={!isSupabaseConfigured}
           >
             Refresh Subscription Status
           </Button>

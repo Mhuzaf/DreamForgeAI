@@ -30,7 +30,7 @@ serve(async (req) => {
       throw new Error("Invalid plan specified");
     }
 
-    const stripe = new Stripe("sk_test_51RIzFSBRyZcLVe9YzDinQsrudTkhEhqVjyYOk3oAsxJhYIEgZS6gqS8YG6axdxtJAb25o7CDZZhbaEvTKz6lHiUw00dCm0DJaC", { 
+    const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
       apiVersion: "2023-10-16" 
     });
 
@@ -41,7 +41,6 @@ serve(async (req) => {
     }
 
     const priceId = plan === "pro" ? "price_1Rc84EBRyZcLVe9Y1fhjCoxS" : "price_1Rc8DlBRyZcLVe9YxzqryocS";
-    const planName = plan === "pro" ? "Pro Plan" : "Studio Plan";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -53,7 +52,7 @@ serve(async (req) => {
         },
       ],
       mode: "subscription",
-      success_url: `${req.headers.get("origin")}/subscription-success?session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.get("origin")}/?success=true`,
       cancel_url: `${req.headers.get("origin")}/?canceled=true`,
       metadata: {
         user_id: user.id,
