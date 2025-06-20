@@ -1,6 +1,5 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { createClient } from '@supabase/supabase-js';
 
 interface SubscriptionContextType {
   subscribed: boolean;
@@ -28,16 +27,25 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   const [subscribed, setSubscribed] = useState(false);
   const [subscriptionTier, setSubscriptionTier] = useState<string | null>(null);
   const [subscriptionEnd, setSubscriptionEnd] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL,
-    import.meta.env.VITE_SUPABASE_ANON_KEY
-  );
+  // Check if Supabase is configured
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+  const isSupabaseConfigured = supabaseUrl && supabaseAnonKey;
 
   const refreshSubscription = async () => {
+    if (!isSupabaseConfigured) {
+      console.log('Supabase not configured - subscription features disabled');
+      return;
+    }
+
     try {
       setLoading(true);
+      // Dynamic import to avoid errors when Supabase is not configured
+      const { createClient } = await import('@supabase/supabase-js');
+      const supabase = createClient(supabaseUrl, supabaseAnonKey);
+      
       const { data: { session } } = await supabase.auth.getSession();
       
       if (!session) {
@@ -69,16 +77,33 @@ export const SubscriptionProvider = ({ children }: SubscriptionProviderProps) =>
   };
 
   useEffect(() => {
-    refreshSubscription();
+    if (isSupabaseConfigured) {
+      refreshSubscription();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        refreshSubscription();
-      }
-    });
+      // Set up auth state listener only if Supabase is configured
+      const setupAuthListener = async () => {
+        const { createClient } = await import('@supabase/supabase-js');
+        const supabase = createClient(supabaseUrl, supabaseAnonKey);
+        
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+            refreshSubscription();
+          }
+        });
 
-    return () => subscription.unsubscribe();
-  }, []);
+        return () => subscription.unsubscribe();
+      };
+
+      let cleanup: (() => void) | undefined;
+      setupAuthListener().then((cleanupFn) => {
+        cleanup = cleanupFn;
+      });
+
+      return () => {
+        if (cleanup) cleanup();
+      };
+    }
+  }, [isSupabaseConfigured]);
 
   return (
     <SubscriptionContext.Provider value={{
