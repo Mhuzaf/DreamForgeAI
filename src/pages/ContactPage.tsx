@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import Header from '../components/Header';
 import { Button } from '../components/ui/button';
@@ -131,15 +130,15 @@ const ContactPage = () => {
                 <div className="space-y-4">
                   <div className="flex items-center space-x-3">
                     <Mail className="w-5 h-5 text-purple-400" />
-                    <span className="text-gray-300">support@dreamforge.ai</span>
+                    <span className="text-gray-300">muhammadhuzafaaa@gmail.com</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <Phone className="w-5 h-5 text-purple-400" />
-                    <span className="text-gray-300">+1 (555) 123-4567</span>
+                    <span className="text-gray-300">+971 058 8149266</span>
                   </div>
                   <div className="flex items-center space-x-3">
                     <MapPin className="w-5 h-5 text-purple-400" />
-                    <span className="text-gray-300">San Francisco, CA</span>
+                    <span className="text-gray-300">Dubai, United Arab Emirates</span>
                   </div>
                 </div>
               </div>
