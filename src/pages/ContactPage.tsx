@@ -3,6 +3,7 @@ import Header from '../components/Header';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
+import StripeConfigModal from '../components/StripeConfigModal';
 import { Mail, MapPin, Phone } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 
@@ -141,6 +142,15 @@ const ContactPage = () => {
                     <span className="text-gray-300">Dubai, United Arab Emirates</span>
                   </div>
                 </div>
+              </div>
+
+              {/* Stripe Configuration Section */}
+              <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 backdrop-blur-sm rounded-2xl p-8 border border-green-500/30">
+                <h3 className="text-xl font-bold mb-4">Payment Setup</h3>
+                <p className="text-gray-300 mb-6">
+                  Ready to set up Stripe payments for Pro & Studio plans? Configure your payment settings securely.
+                </p>
+                <StripeConfigModal />
               </div>
 
               <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30">
