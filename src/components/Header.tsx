@@ -3,16 +3,17 @@ import { useState } from 'react';
 import { Menu, X, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { useSubscription } from '../contexts/SubscriptionContext';
+import UserButton from './auth/UserButton';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [user, setUser] = useState<{ name: string; email: string } | null>(null);
   const { subscriptionTier } = useSubscription();
 
   const navItems = [
     { name: 'Home', href: '/' },
     { name: 'Pricing', href: '#pricing' },
     { name: 'About', href: '/about' },
-    { name: 'FAQ', href: '/faq' },
     { name: 'Contact', href: '/contact' },
     { name: 'My Creations', href: '/my-creations' },
   ];
@@ -23,6 +24,19 @@ const Header = () => {
     if (pricingSection) {
       pricingSection.scrollIntoView({ behavior: 'smooth' });
     }
+  };
+
+  const handleLogin = () => {
+    // Mock login for now - replace with actual auth
+    setUser({ name: 'John Doe', email: 'john@example.com' });
+  };
+
+  const handleLogout = () => {
+    setUser(null);
+  };
+
+  const handleMyCreations = () => {
+    window.location.href = '/my-creations';
   };
 
   return (
@@ -49,14 +63,20 @@ const Header = () => {
             ))}
           </nav>
 
-          {/* Current Plan Badge */}
-          {subscriptionTier && (
-            <div className="hidden md:flex items-center">
+          {/* Desktop Auth and Plan Badge */}
+          <div className="hidden md:flex items-center space-x-4">
+            {subscriptionTier && (
               <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-sm font-medium">
                 {subscriptionTier} Plan
               </span>
-            </div>
-          )}
+            )}
+            <UserButton 
+              user={user}
+              onLogin={handleLogin}
+              onLogout={handleLogout}
+              onMyCreations={handleMyCreations}
+            />
+          </div>
 
           {/* Mobile menu button */}
           <div className="md:hidden">
@@ -85,13 +105,21 @@ const Header = () => {
                   {item.name}
                 </a>
               ))}
-              {subscriptionTier && (
-                <div className="px-3 py-2">
-                  <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                    {subscriptionTier} Plan
-                  </span>
-                </div>
-              )}
+              <div className="px-3 py-2 border-t border-gray-700 mt-2">
+                {subscriptionTier && (
+                  <div className="mb-2">
+                    <span className="bg-gradient-to-r from-purple-600 to-pink-600 text-white px-3 py-1 rounded-full text-sm font-medium">
+                      {subscriptionTier} Plan
+                    </span>
+                  </div>
+                )}
+                <UserButton 
+                  user={user}
+                  onLogin={handleLogin}
+                  onLogout={handleLogout}
+                  onMyCreations={handleMyCreations}
+                />
+              </div>
             </div>
           </div>
         )}
