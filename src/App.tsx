@@ -1,12 +1,13 @@
+
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ThemeProvider } from './components/ui/theme-provider';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { Toaster } from './components/ui/toaster';
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import Index from './pages/Index';
-import AboutPage from './pages/About';
-import ContactPage from './pages/Contact';
-import FAQPage from './pages/FAQ';
-import MyCreationsPage from './pages/MyCreations';
+import AboutPage from './pages/AboutPage';
+import ContactPage from './pages/ContactPage';
+import FAQPage from './pages/FAQPage';
+import MyCreationsPage from './pages/MyCreationsPage';
 import NotFound from './pages/NotFound';
 import { CreditsProvider } from './contexts/CreditsContext';
 import { SubscriptionProvider } from './contexts/SubscriptionContext';
@@ -19,7 +20,7 @@ function App() {
       <SubscriptionProvider>
         <FeatureAccessProvider>
           <CreditsProvider>
-            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+            <ThemeProvider>
               <Router>
                 <div className="min-h-screen bg-background font-sans antialiased">
                   <Toaster />
