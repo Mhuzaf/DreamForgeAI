@@ -4,7 +4,7 @@ import Hero from '../components/Hero';
 import PromptInput from '../components/PromptInput';
 import CurrentPlanBanner from '../components/CurrentPlanBanner';
 import SubscriptionPlans from '../components/SubscriptionPlans';
-import CommunityGallery from '../components/CommunityGallery';
+import PublicGallery from '../components/PublicGallery';
 
 const Index = () => {
   return (
@@ -15,7 +15,7 @@ const Index = () => {
         <CurrentPlanBanner />
       </div>
       <PromptInput />
-      <CommunityGallery />
+      <PublicGallery />
       <SubscriptionPlans />
     </div>
   );

@@ -5,13 +5,15 @@ import { Slider } from './ui/slider';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider } from './ui/tooltip';
 import { useToast } from '../hooks/use-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCredits } from '../contexts/CreditsContext';
 import { useSettings } from '../hooks/useSettings';
 import { generateStabilityImage, type GeneratedImage, type StabilityImageParams } from '../services/stabilityAI';
 import Gallery from './Gallery';
+import AIAssistant from './AIAssistant';
+import PromptHistory from './PromptHistory';
 
 const PromptInput = () => {
   const { settings, updateSetting } = useSettings();
@@ -28,6 +30,11 @@ const PromptInput = () => {
     const baseCredits = 1;
     const resolutionMultiplier = parseInt(settings.resolution[0]) >= 1536 ? 2 : 1;
     return baseCredits * settings.imageAmount[0] * resolutionMultiplier;
+  };
+
+  const handlePromptSuggestion = (suggestedPrompt: string) => {
+    setPrompt(suggestedPrompt);
+    updateSetting('lastPrompt', suggestedPrompt);
   };
 
   const handleGenerate = async () => {
@@ -126,7 +133,7 @@ const PromptInput = () => {
     <>
       <TooltipProvider>
         <section id="prompt-section" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black to-gray-900 dark:from-black dark:to-gray-900">
-          <div className="max-w-4xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="text-center mb-12">
               <div className="flex justify-center items-center gap-4 mb-6">
                 <h2 className="text-4xl sm:text-5xl font-bold">
@@ -153,229 +160,250 @@ const PromptInput = () => {
               </p>
             </div>
 
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
-              <div className="space-y-8">
-                {/* Prompt Input */}
-                <div>
-                  <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-3">
-                    Enter your prompt
-                  </label>
-                  <div className="relative">
-                    <textarea
-                      id="prompt"
-                      value={prompt}
-                      onChange={(e) => setPrompt(e.target.value)}
-                      placeholder="Describe the image you want to create... Be creative and detailed!"
-                      className="w-full h-32 px-4 py-3 bg-gray-900/80 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200"
-                      maxLength={500}
-                    />
-                    <div className="absolute bottom-3 right-3 text-xs text-gray-500">
-                      {prompt.length}/500
-                    </div>
-                  </div>
-                </div>
-
-                {/* Negative Prompt */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <label className="text-sm font-medium text-gray-300">Negative Prompt (Optional)</label>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Describe what you DON'T want in your image</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Textarea
-                    value={negativePrompt}
-                    onChange={(e) => setNegativePrompt(e.target.value)}
-                    placeholder="blurry, low quality, distorted..."
-                    className="bg-gray-900/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                    rows={3}
-                  />
-                </div>
-
-                {/* Style Selection */}
-                <div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <label className="text-sm font-medium text-gray-300">Art Style</label>
-                    <Tooltip>
-                      <TooltipTrigger>
-                        <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Choose the artistic style for your generated image</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </div>
-                  <Select value={settings.style} onValueChange={(value) => updateSetting('style', value)}>
-                    <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
-                      <SelectValue placeholder="Select a style" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-gray-900 border-gray-600">
-                      {styles.map((styleOption) => (
-                        <SelectItem key={styleOption.value} value={styleOption.value} className="text-white hover:bg-gray-700">
-                          {styleOption.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Advanced Controls */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Image Amount */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <label className="text-sm font-medium text-gray-300">Image Amount</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Number of images to generate (1-8)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <div className="space-y-2">
-                      <Slider
-                        value={settings.imageAmount}
-                        onValueChange={(value) => updateSetting('imageAmount', value)}
-                        max={8}
-                        min={1}
-                        step={1}
-                        className="w-full [&_[role=slider]]:bg-purple-600 [&_[role=slider]]:border-purple-600"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>1</span>
-                        <span className="text-purple-400 font-medium">{settings.imageAmount[0]}</span>
-                        <span>8</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Resolution */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <label className="text-sm font-medium text-gray-300">Resolution</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Output image resolution (higher = better quality, more credits)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <Select value={settings.resolution[0]} onValueChange={(value) => updateSetting('resolution', [value])}>
-                      <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-gray-900 border-gray-600">
-                        {resolutionOptions.map((res) => (
-                          <SelectItem key={res.value} value={res.value} className="text-white hover:bg-gray-700">
-                            {res.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {/* Guidance Scale */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <label className="text-sm font-medium text-gray-300">Guidance Scale</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>How closely to follow the prompt (higher = more strict)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <div className="space-y-2">
-                      <Slider
-                        value={settings.guidanceScale}
-                        onValueChange={(value) => updateSetting('guidanceScale', value)}
-                        max={20}
-                        min={1}
-                        step={0.5}
-                        className="w-full [&_[role=slider]]:bg-purple-600 [&_[role=slider]]:border-purple-600"
-                      />
-                      <div className="flex justify-between text-xs text-gray-500">
-                        <span>1.0</span>
-                        <span className="text-purple-400 font-medium">{settings.guidanceScale[0]}</span>
-                        <span>20.0</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Seed */}
-                  <div>
-                    <div className="flex items-center gap-2 mb-3">
-                      <label className="text-sm font-medium text-gray-300">Seed (Optional)</label>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>Seed for reproducible results (leave empty for random)</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </div>
-                    <Input
-                      value={settings.seed}
-                      onChange={(e) => updateSetting('seed', e.target.value)}
-                      placeholder="Enter seed number..."
-                      className="bg-gray-900/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                    />
-                  </div>
-                </div>
-
-                {/* Credits Display and Generate Button */}
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between text-sm text-gray-400">
-                    <span>Credits needed: {calculateCreditsNeeded()}</span>
-                    <span>Credits available: {credits}</span>
-                  </div>
-                  
-                  <Button
-                    onClick={handleGenerate}
-                    disabled={!prompt.trim() || isGenerating || credits < calculateCreditsNeeded()}
-                    className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg"
-                  >
-                    {isGenerating ? (
-                      <>
-                        <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                        Generating...
-                      </>
-                    ) : (
-                      <>
-                        <Wand2 className="mr-2 w-5 h-5" />
-                        Generate Image
-                      </>
-                    )}
-                  </Button>
-                </div>
-
-                {/* Loading Animation */}
-                {isGenerating && (
-                  <div className="mt-6 animate-fade-in">
-                    <div className="bg-gray-900/80 rounded-lg p-6 border border-gray-700">
-                      <div className="flex items-center space-x-3 mb-4">
-                        <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                        <span className="text-white font-medium">Creating your masterpiece with Stability AI...</span>
-                      </div>
-                      <div className="w-full bg-gray-700 rounded-full h-2">
-                        <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                )}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+              {/* AI Assistant */}
+              <div className="lg:col-span-1">
+                <AIAssistant 
+                  onPromptSuggestion={handlePromptSuggestion}
+                  currentPrompt={prompt}
+                />
               </div>
+
+              {/* Main Form */}
+              <div className="lg:col-span-2">
+                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
+                  <div className="space-y-8">
+                    {/* Prompt Input */}
+                    <div>
+                      <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-3">
+                        Enter your prompt
+                      </label>
+                      <div className="relative">
+                        <textarea
+                          id="prompt"
+                          value={prompt}
+                          onChange={(e) => setPrompt(e.target.value)}
+                          placeholder="Describe the image you want to create... Be creative and detailed!"
+                          className="w-full h-32 px-4 py-3 bg-gray-900/80 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200"
+                          maxLength={500}
+                        />
+                        <div className="absolute bottom-3 right-3 text-xs text-gray-500">
+                          {prompt.length}/500
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Negative Prompt */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-medium text-gray-300">Negative Prompt (Optional)</label>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Describe what you DON'T want in your image</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Textarea
+                        value={negativePrompt}
+                        onChange={(e) => setNegativePrompt(e.target.value)}
+                        placeholder="blurry, low quality, distorted..."
+                        className="bg-gray-900/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                        rows={3}
+                      />
+                    </div>
+
+                    {/* Style Selection */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-medium text-gray-300">Art Style</label>
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Choose the artistic style for your generated image</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </div>
+                      <Select value={settings.style} onValueChange={(value) => updateSetting('style', value)}>
+                        <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
+                          <SelectValue placeholder="Select a style" />
+                        </SelectTrigger>
+                        <SelectContent className="bg-gray-900 border-gray-600">
+                          {styles.map((styleOption) => (
+                            <SelectItem key={styleOption.value} value={styleOption.value} className="text-white hover:bg-gray-700">
+                              {styleOption.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Advanced Controls */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      {/* Image Amount */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-sm font-medium text-gray-300">Image Amount</label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Number of images to generate (1-8)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <div className="space-y-2">
+                          <Slider
+                            value={settings.imageAmount}
+                            onValueChange={(value) => updateSetting('imageAmount', value)}
+                            max={8}
+                            min={1}
+                            step={1}
+                            className="w-full [&_[role=slider]]:bg-purple-600 [&_[role=slider]]:border-purple-600"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>1</span>
+                            <span className="text-purple-400 font-medium">{settings.imageAmount[0]}</span>
+                            <span>8</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Resolution */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-sm font-medium text-gray-300">Resolution</label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Output image resolution (higher = better quality, more credits)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Select value={settings.resolution[0]} onValueChange={(value) => updateSetting('resolution', [value])}>
+                          <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-900 border-gray-600">
+                            {resolutionOptions.map((res) => (
+                              <SelectItem key={res.value} value={res.value} className="text-white hover:bg-gray-700">
+                                {res.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Guidance Scale */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-sm font-medium text-gray-300">Guidance Scale</label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>How closely to follow the prompt (higher = more strict)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <div className="space-y-2">
+                          <Slider
+                            value={settings.guidanceScale}
+                            onValueChange={(value) => updateSetting('guidanceScale', value)}
+                            max={20}
+                            min={1}
+                            step={0.5}
+                            className="w-full [&_[role=slider]]:bg-purple-600 [&_[role=slider]]:border-purple-600"
+                          />
+                          <div className="flex justify-between text-xs text-gray-500">
+                            <span>1.0</span>
+                            <span className="text-purple-400 font-medium">{settings.guidanceScale[0]}</span>
+                            <span>20.0</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Seed */}
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-sm font-medium text-gray-300">Seed (Optional)</label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Seed for reproducible results (leave empty for random)</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Input
+                          value={settings.seed}
+                          onChange={(e) => updateSetting('seed', e.target.value)}
+                          placeholder="Enter seed number..."
+                          className="bg-gray-900/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Credits Display and Generate Button */}
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between text-sm text-gray-400">
+                        <span>Credits needed: {calculateCreditsNeeded()}</span>
+                        <span>Credits available: {credits}</span>
+                      </div>
+                      
+                      <Button
+                        onClick={handleGenerate}
+                        disabled={!prompt.trim() || isGenerating || credits < calculateCreditsNeeded()}
+                        className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Wand2 className="mr-2 w-5 h-5" />
+                            Generate Image
+                          </>
+                        )}
+                      </Button>
+                    </div>
+
+                    {/* Loading Animation */}
+                    {isGenerating && (
+                      <div className="mt-6 animate-fade-in">
+                        <div className="bg-gray-900/80 rounded-lg p-6 border border-gray-700">
+                          <div className="flex items-center space-x-3 mb-4">
+                            <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
+                            <span className="text-white font-medium">Creating your masterpiece with Stability AI...</span>
+                          </div>
+                          <div className="w-full bg-gray-700 rounded-full h-2">
+                            <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Prompt History */}
+            <div className="mb-8">
+              <PromptHistory 
+                onPromptSelect={handlePromptSuggestion}
+                currentPrompt={prompt}
+              />
             </div>
 
             {/* Example prompts */}
