@@ -95,6 +95,7 @@ export type Database = {
           description: string | null
           id: string
           image_url: string | null
+          is_contest_entry: boolean | null
           is_public: boolean | null
           likes_count: number | null
           prompt_used: string | null
@@ -107,6 +108,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_contest_entry?: boolean | null
           is_public?: boolean | null
           likes_count?: number | null
           prompt_used?: string | null
@@ -119,6 +121,7 @@ export type Database = {
           description?: string | null
           id?: string
           image_url?: string | null
+          is_contest_entry?: boolean | null
           is_public?: boolean | null
           likes_count?: number | null
           prompt_used?: string | null

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Heart, MessageCircle, Bookmark, Share } from 'lucide-react';
 import { Button } from './ui/button';
@@ -49,7 +50,7 @@ const PublicGallery = () => {
       const transformedPosts: PublicPost[] = (data || []).map(post => ({
         id: post.id,
         title: post.title || 'Untitled',
-        prompt: post.prompt || '',
+        prompt: post.prompt_used || '',
         image_url: post.image_url || '',
         likes_count: post.likes_count || 0,
         comments_count: 0,
@@ -57,7 +58,7 @@ const PublicGallery = () => {
         created_at: post.created_at,
         user_id: post.user_id,
         is_public: post.is_public,
-        is_contest_entry: post.is_contest_entry
+        is_contest_entry: post.is_contest_entry || false
       }));
       
       setPosts(transformedPosts);
@@ -80,7 +81,7 @@ const PublicGallery = () => {
       const transformedPosts: PublicPost[] = (data || []).map(post => ({
         id: post.id,
         title: post.title || 'Untitled',
-        prompt: post.prompt || '',
+        prompt: post.prompt_used || '',
         image_url: post.image_url || '',
         likes_count: post.likes_count || 0,
         comments_count: 0,
@@ -88,7 +89,7 @@ const PublicGallery = () => {
         created_at: post.created_at,
         user_id: post.user_id,
         is_public: post.is_public,
-        is_contest_entry: post.is_contest_entry
+        is_contest_entry: post.is_contest_entry || false
       }));
       
       setTopPosts(transformedPosts);
@@ -112,7 +113,7 @@ const PublicGallery = () => {
       const transformedPosts: PublicPost[] = (data || []).map(post => ({
         id: post.id,
         title: post.title || 'Untitled',
-        prompt: post.prompt || '',
+        prompt: post.prompt_used || '',
         image_url: post.image_url || '',
         likes_count: post.likes_count || 0,
         comments_count: 0,
@@ -120,7 +121,7 @@ const PublicGallery = () => {
         created_at: post.created_at,
         user_id: post.user_id,
         is_public: post.is_public,
-        is_contest_entry: post.is_contest_entry
+        is_contest_entry: post.is_contest_entry || false
       }));
       
       setContestPosts(transformedPosts);

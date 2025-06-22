@@ -1,43 +1,45 @@
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider } from './components/ui/theme-provider';
+import { Toaster } from './components/ui/toaster';
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import Index from './pages/Index';
+import AboutPage from './pages/About';
+import ContactPage from './pages/Contact';
+import FAQPage from './pages/FAQ';
+import MyCreationsPage from './pages/MyCreations';
+import NotFound from './pages/NotFound';
+import { CreditsProvider } from './contexts/CreditsContext';
+import { SubscriptionProvider } from './contexts/SubscriptionContext';
+import { FeatureAccessProvider } from './contexts/FeatureAccessContext';
+import UpgradePopup from './components/UpgradePopup';
 
-import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { ThemeProvider } from "./contexts/ThemeContext";
-import { CreditsProvider } from "./contexts/CreditsContext";
-import { SubscriptionProvider } from "./contexts/SubscriptionContext";
-import Index from "./pages/Index";
-import MyCreationsPage from "./pages/MyCreationsPage";
-import AboutPage from "./pages/AboutPage";
-import ContactPage from "./pages/ContactPage";
-import NotFound from "./pages/NotFound";
-
-const queryClient = new QueryClient();
-
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider>
-      <CreditsProvider>
-        <SubscriptionProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/my-creations" element={<MyCreationsPage />} />
-                <Route path="/about" element={<AboutPage />} />
-                <Route path="/contact" element={<ContactPage />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </BrowserRouter>
-          </TooltipProvider>
-        </SubscriptionProvider>
-      </CreditsProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+function App() {
+  return (
+    <QueryClientProvider client={new QueryClient()}>
+      <SubscriptionProvider>
+        <FeatureAccessProvider>
+          <CreditsProvider>
+            <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+              <Router>
+                <div className="min-h-screen bg-background font-sans antialiased">
+                  <Toaster />
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/about" element={<AboutPage />} />
+                    <Route path="/contact" element={<ContactPage />} />
+                    <Route path="/faq" element={<FAQPage />} />
+                    <Route path="/my-creations" element={<MyCreationsPage />} />
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                  <UpgradePopup />
+                </div>
+              </Router>
+            </ThemeProvider>
+          </CreditsProvider>
+        </FeatureAccessProvider>
+      </SubscriptionProvider>
+    </QueryClientProvider>
+  );
+}
 
 export default App;

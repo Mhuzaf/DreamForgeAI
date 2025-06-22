@@ -93,11 +93,16 @@ const SubscriptionPlans = () => {
       period: 'forever',
       description: 'Perfect for getting started',
       features: [
-        '25 credits per month',
-        'Basic image generation',
-        'Standard resolution (512x512)',
-        'Community gallery access',
-        'Basic social features'
+        '5 generations per day',
+        'Basic prompt-to-image generation',
+        '3 core styles (Realistic, Sketch, Anime)',  
+        '512×512 resolution',
+        'Access to Community Gallery',
+        'Like & save images to library',
+        'Download in PNG format',
+        'Basic history of past 3 prompts',
+        'Access to public contests',
+        'Tooltips & beginner onboarding'
       ],
       icon: <Sparkles className="w-6 h-6 text-blue-500" />,
       current: !subscriptionTier || subscriptionTier === 'Community'
@@ -109,13 +114,16 @@ const SubscriptionPlans = () => {
       period: 'per month',
       description: 'For serious creators',
       features: [
-        'Unlimited image generation',
-        'HD resolution (up to 1536x1536)',
-        'Priority processing',
-        'Private gallery',
-        'Advanced editing tools',
-        'Batch generation',
-        'Early access to new models'
+        'Everything in Community',
+        '50 generations per day',
+        'HD quality output (1024×1024)',
+        'Prompt suggestions & autocomplete',
+        'Live preview thumbnails',
+        'Prompt templates by genre',
+        'Prompt refinement chatbot',
+        'Style advisor recommendations',
+        'Save, organize, and favorite prompts',
+        'Basic generation analytics'
       ],
       icon: <Crown className="w-6 h-6 text-purple-500" />,
       popular: true,
@@ -129,13 +137,16 @@ const SubscriptionPlans = () => {
       description: 'For professional studios',
       features: [
         'Everything in Pro',
-        'Ultra HD resolution (up to 2048x2048)',
-        'API access',
-        'Commercial license',
-        'Team collaboration',
-        'Custom models training',
-        'Priority support',
-        'White-label options'
+        'Public gallery boost visibility',
+        'Built-in AI image editor',
+        'Inpainting & outpainting',
+        'Image-to-image generation',
+        'ControlNet input support',
+        'REST & GraphQL API access',
+        'Figma & Photoshop plugins',
+        'Discord bot integration',
+        'Export in PSD, PNG, JPG, SVG',
+        'Priority support & early access'
       ],
       icon: <Crown className="w-6 h-6 text-gold-500" />,
       current: subscriptionTier === 'Studio'
