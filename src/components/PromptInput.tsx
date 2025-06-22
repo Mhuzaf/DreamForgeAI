@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Wand2, Sparkles, HelpCircle, Moon, Sun } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
@@ -5,7 +6,7 @@ import { Slider } from './ui/slider';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipProvider } from './ui/tooltip';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { useToast } from '../hooks/use-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCredits } from '../contexts/CreditsContext';
