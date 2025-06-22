@@ -3,9 +3,9 @@ import Header from '../components/Header';
 import Hero from '../components/Hero';
 import PromptInput from '../components/PromptInput';
 import CurrentPlanBanner from '../components/CurrentPlanBanner';
+import MyCreations from '../components/MyCreations';
 import SubscriptionPlans from '../components/SubscriptionPlans';
 import PublicGallery from '../components/PublicGallery';
-import MyCreations from '../components/MyCreations';
 
 const Index = () => {
   return (

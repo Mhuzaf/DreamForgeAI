@@ -1,180 +1,85 @@
-import { useState } from 'react';
+
 import Header from '../components/Header';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Textarea } from '../components/ui/textarea';
-import StripeConfigModal from '../components/StripeConfigModal';
-import { Mail, MapPin, Phone } from 'lucide-react';
-import { useToast } from '../hooks/use-toast';
 
 const ContactPage = () => {
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    message: ''
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name || !formData.email || !formData.message) {
-      toast({
-        title: "Error",
-        description: "Please fill in all fields.",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    
-    // Simulate form submission
-    setTimeout(() => {
-      toast({
-        title: "Message Sent!",
-        description: "Thank you for contacting us. We'll get back to you soon."
-      });
-      setFormData({ name: '', email: '', message: '' });
-      setIsSubmitting(false);
-    }, 1000);
-  };
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setFormData(prev => ({
-      ...prev,
-      [e.target.name]: e.target.value
-    }));
-  };
-
   return (
     <div className="min-h-screen bg-black text-white">
       <Header />
-      <div className="pt-20 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
-          {/* Header */}
+      <div className="pt-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="text-center mb-12">
-            <h1 className="text-5xl sm:text-6xl font-bold mb-6">
+            <h1 className="text-4xl font-bold mb-4">
               <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 Contact Us
               </span>
             </h1>
             <p className="text-xl text-gray-300">
-              Have questions or feedback? We'd love to hear from you.
+              Get in touch with our team
             </p>
           </div>
 
-          <div className="grid lg:grid-cols-2 gap-12">
-            {/* Contact Form */}
-            <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-              <h2 className="text-2xl font-bold mb-6">Send us a message</h2>
-              <form onSubmit={handleSubmit} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div>
+              <h2 className="text-2xl font-semibold mb-6 text-white">Get in Touch</h2>
+              <div className="space-y-4">
+                <div>
+                  <h3 className="text-lg font-medium text-purple-400">Email</h3>
+                  <p className="text-gray-300">support@dreamforge.ai</p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-purple-400">Discord</h3>
+                  <p className="text-gray-300">Join our community server</p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-purple-400">Response Time</h3>
+                  <p className="text-gray-300">We typically respond within 24 hours</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-2xl font-semibold mb-6 text-white">Send us a Message</h2>
+              <form className="space-y-6">
                 <div>
                   <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                    Full Name
+                    Name
                   </label>
-                  <Input
-                    id="name"
-                    name="name"
+                  <input
                     type="text"
-                    value={formData.name}
-                    onChange={handleChange}
-                    placeholder="Enter your full name"
-                    className="bg-gray-800/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    id="name"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="Your name"
                   />
                 </div>
-                
                 <div>
                   <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                    Email Address
+                    Email
                   </label>
-                  <Input
-                    id="email"
-                    name="email"
+                  <input
                     type="email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    placeholder="Enter your email address"
-                    className="bg-gray-800/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    id="email"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    placeholder="your@email.com"
                   />
                 </div>
-                
                 <div>
                   <label htmlFor="message" className="block text-sm font-medium text-gray-300 mb-2">
                     Message
                   </label>
-                  <Textarea
+                  <textarea
                     id="message"
-                    name="message"
-                    value={formData.message}
-                    onChange={handleChange}
-                    placeholder="Tell us how we can help you..."
                     rows={6}
-                    className="bg-gray-800/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+                    placeholder="Tell us how we can help..."
                   />
                 </div>
-                
-                <Button
+                <button
                   type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 rounded-lg transition-all duration-300 transform hover:scale-105 shadow-lg"
+                  className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white font-semibold py-3 px-6 rounded-lg transition-all duration-300"
                 >
-                  {isSubmitting ? 'Sending...' : 'Send Message'}
-                </Button>
+                  Send Message
+                </button>
               </form>
-            </div>
-
-            {/* Contact Information */}
-            <div className="space-y-8">
-              <div className="bg-gray-900/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-                <h2 className="text-2xl font-bold mb-6">Get in touch</h2>
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-3">
-                    <Mail className="w-5 h-5 text-purple-400" />
-                    <span className="text-gray-300">muhammadhuzafaaa@gmail.com</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <Phone className="w-5 h-5 text-purple-400" />
-                    <span className="text-gray-300">+971 058 8149266</span>
-                  </div>
-                  <div className="flex items-center space-x-3">
-                    <MapPin className="w-5 h-5 text-purple-400" />
-                    <span className="text-gray-300">Dubai, United Arab Emirates</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Stripe Configuration Section */}
-              <div className="bg-gradient-to-r from-green-900/30 to-emerald-900/30 backdrop-blur-sm rounded-2xl p-8 border border-green-500/30">
-                <h3 className="text-xl font-bold mb-4">Payment Setup</h3>
-                <p className="text-gray-300 mb-6">
-                  Ready to set up Stripe payments for Pro & Studio plans? Configure your payment settings securely.
-                </p>
-                <StripeConfigModal />
-              </div>
-
-              <div className="bg-gradient-to-r from-purple-900/30 to-pink-900/30 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/30">
-                <h3 className="text-xl font-bold mb-4">Support Hours</h3>
-                <div className="space-y-2 text-gray-300">
-                  <p><strong className="text-white">Monday - Friday:</strong> 9:00 AM - 6:00 PM PST</p>
-                  <p><strong className="text-white">Saturday:</strong> 10:00 AM - 4:00 PM PST</p>
-                  <p><strong className="text-white">Sunday:</strong> Closed</p>
-                </div>
-              </div>
-
-              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-gray-700">
-                <h3 className="text-xl font-bold mb-4">Frequently Asked</h3>
-                <p className="text-gray-300 mb-4">
-                  Before reaching out, check our FAQ page for quick answers to common questions.
-                </p>
-                <Button
-                  variant="outline"
-                  className="border-purple-500 text-purple-400 hover:bg-purple-500/10"
-                  onClick={() => window.location.href = '/faq'}
-                >
-                  Visit FAQ
-                </Button>
-              </div>
             </div>
           </div>
         </div>

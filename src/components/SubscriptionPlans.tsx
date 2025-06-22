@@ -34,16 +34,26 @@ const SubscriptionPlans = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Checkout error:', error);
+        throw new Error(error.message || 'Failed to create checkout session');
+      }
 
-      if (data.url) {
+      if (data?.url) {
         window.open(data.url, '_blank');
+        
+        // Refresh subscription status after a delay
+        setTimeout(() => {
+          refreshSubscription();
+        }, 3000);
+      } else {
+        throw new Error('No checkout URL received');
       }
     } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
         title: "Error",
-        description: "Failed to create checkout session. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create checkout session. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -70,16 +80,21 @@ const SubscriptionPlans = () => {
         },
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Customer portal error:', error);
+        throw new Error(error.message || 'Failed to open customer portal');
+      }
 
-      if (data.url) {
+      if (data?.url) {
         window.open(data.url, '_blank');
+      } else {
+        throw new Error('No portal URL received');
       }
     } catch (error) {
       console.error('Error opening customer portal:', error);
       toast({
         title: "Error",
-        description: "Failed to open customer portal. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to open customer portal. Please try again.",
         variant: "destructive"
       });
     }
