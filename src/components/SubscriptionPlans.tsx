@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
@@ -26,8 +27,6 @@ const SubscriptionPlans = () => {
         return;
       }
 
-      console.log(`Creating checkout session for plan: ${plan}`);
-
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { plan },
         headers: {
@@ -35,23 +34,16 @@ const SubscriptionPlans = () => {
         },
       });
 
-      if (error) {
-        console.error('Supabase function error:', error);
-        throw error;
-      }
+      if (error) throw error;
 
-      console.log('Checkout session response:', data);
-
-      if (data?.url) {
+      if (data.url) {
         window.open(data.url, '_blank');
-      } else {
-        throw new Error('No checkout URL returned');
       }
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
         title: "Error",
-        description: error.message || "Failed to create checkout session. Please try again.",
+        description: "Failed to create checkout session. Please try again.",
         variant: "destructive"
       });
     } finally {
