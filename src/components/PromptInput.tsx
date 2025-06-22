@@ -38,6 +38,20 @@ const PromptInput = () => {
     updateSetting('lastPrompt', suggestedPrompt);
   };
 
+  const buildStyledPrompt = (basePrompt: string, style: string) => {
+    const styleModifiers = {
+      'realistic': 'photorealistic, highly detailed, professional photography',
+      'anime': 'anime style, manga style, vibrant colors, cel shading',
+      '3d': '3D render, volumetric lighting, octane render, blender',
+      'sketch': 'pencil sketch, hand drawn, artistic sketch, line art',
+      'watercolor': 'watercolor painting, soft brush strokes, artistic medium',
+      'oil-painting': 'oil painting, classical art style, rich textures, painterly'
+    };
+
+    const modifier = styleModifiers[style as keyof typeof styleModifiers] || '';
+    return modifier ? `${basePrompt}, ${modifier}` : basePrompt;
+  };
+
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast({
@@ -58,6 +72,9 @@ const PromptInput = () => {
       return;
     }
 
+    // Build the styled prompt
+    const styledPrompt = buildStyledPrompt(prompt, settings.style);
+
     // Save current prompt to settings
     updateSetting('lastPrompt', prompt);
     updateSetting('negativePrompt', negativePrompt);
@@ -66,7 +83,7 @@ const PromptInput = () => {
     
     try {
       const imageParams: StabilityImageParams = {
-        prompt: prompt,
+        prompt: styledPrompt,
         negativePrompt: negativePrompt,
         width: parseInt(settings.resolution[0]),
         height: parseInt(settings.resolution[0]),

@@ -5,6 +5,7 @@ import PromptInput from '../components/PromptInput';
 import CurrentPlanBanner from '../components/CurrentPlanBanner';
 import SubscriptionPlans from '../components/SubscriptionPlans';
 import PublicGallery from '../components/PublicGallery';
+import MyCreations from '../components/MyCreations';
 
 const Index = () => {
   return (
@@ -15,6 +16,7 @@ const Index = () => {
         <CurrentPlanBanner />
       </div>
       <PromptInput />
+      <MyCreations />
       <PublicGallery />
       <SubscriptionPlans />
     </div>
