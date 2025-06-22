@@ -1,10 +1,11 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, Sparkles } from 'lucide-react';
 import { Button } from './ui/button';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import UserButton from './auth/UserButton';
 import AuthModal from './auth/AuthModal';
+import { supabase } from '../integrations/supabase/client';
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -12,6 +13,32 @@ const Header = () => {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
   const { subscriptionTier } = useSubscription();
+
+  // Listen for auth state changes
+  useEffect(() => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session?.user) {
+        setUser({
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || ''
+        });
+      } else {
+        setUser(null);
+      }
+    });
+
+    // Check initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || ''
+        });
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   const navItems = [
     { name: 'Home', href: '/' },
@@ -23,6 +50,13 @@ const Header = () => {
 
   const scrollToPricing = (e: React.MouseEvent) => {
     e.preventDefault();
+    
+    // If not on home page, navigate to home first
+    if (window.location.pathname !== '/') {
+      window.location.href = '/#pricing';
+      return;
+    }
+    
     const pricingSection = document.querySelector('#pricing');
     if (pricingSection) {
       pricingSection.scrollIntoView({ behavior: 'smooth' });
@@ -34,12 +68,17 @@ const Header = () => {
     setAuthModalOpen(true);
   };
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setUser(null);
   };
 
   const handleMyCreations = () => {
     window.location.href = '/my-creations';
+  };
+
+  const handleLogoClick = () => {
+    window.location.href = '/';
   };
 
   return (
@@ -48,7 +87,10 @@ const Header = () => {
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center space-x-2">
+            <div 
+              className="flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+              onClick={handleLogoClick}
+            >
               <Sparkles className="w-8 h-8 text-purple-500" />
               <span className="text-xl font-bold text-white">DreamForge AI</span>
             </div>
