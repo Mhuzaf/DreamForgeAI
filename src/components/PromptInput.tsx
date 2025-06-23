@@ -10,8 +10,10 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/t
 import { useToast } from '../hooks/use-toast';
 import { useTheme } from '../contexts/ThemeContext';
 import { useCredits } from '../contexts/CreditsContext';
+import { useSubscription } from '../contexts/SubscriptionContext';
 import { useSettings } from '../hooks/useSettings';
 import { generateStabilityImage, type GeneratedImage, type StabilityImageParams } from '../services/stabilityAI';
+import { supabase } from '../integrations/supabase/client';
 import Gallery from './Gallery';
 import AIAssistant from './AIAssistant';
 import PromptHistory from './PromptHistory';
@@ -20,12 +22,14 @@ const PromptInput = () => {
   const { settings, updateSetting } = useSettings();
   const { theme, toggleTheme } = useTheme();
   const { credits, useCredits: consumeCredits } = useCredits();
+  const { subscriptionTier } = useSubscription();
   const { toast } = useToast();
   
   const [prompt, setPrompt] = useState(settings.lastPrompt);
   const [negativePrompt, setNegativePrompt] = useState(settings.negativePrompt);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
+  const [uploadToPublic, setUploadToPublic] = useState(true);
 
   const calculateCreditsNeeded = () => {
     const baseCredits = 1;
@@ -50,6 +54,27 @@ const PromptInput = () => {
 
     const modifier = styleModifiers[style as keyof typeof styleModifiers] || '';
     return modifier ? `${basePrompt}, ${modifier}` : basePrompt;
+  };
+
+  const uploadToPublicGallery = async (image: GeneratedImage, originalPrompt: string) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) return;
+
+      await supabase.from('user_posts').insert({
+        user_id: session.user.id,
+        title: `AI Generated: ${originalPrompt.slice(0, 50)}...`,
+        description: 'Generated with AI',
+        image_url: image.url,
+        prompt_used: originalPrompt,
+        is_public: true,
+        likes_count: 0,
+        created_at: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error uploading to public gallery:', error);
+    }
   };
 
   const handleGenerate = async () => {
@@ -94,6 +119,13 @@ const PromptInput = () => {
 
       console.log('Generating images with params:', imageParams);
       const newImages = await generateStabilityImage(imageParams);
+      
+      // Upload to public gallery if not Pro plan or if user chose to upload publicly
+      if (subscriptionTier !== 'Pro' || uploadToPublic) {
+        for (const image of newImages) {
+          await uploadToPublicGallery(image, prompt);
+        }
+      }
       
       setGeneratedImages(prev => [...newImages, ...prev]);
       setIsGenerating(false);
@@ -179,16 +211,18 @@ const PromptInput = () => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              {/* AI Assistant */}
-              <div className="lg:col-span-1">
-                <AIAssistant 
-                  onPromptSuggestion={handlePromptSuggestion}
-                  currentPrompt={prompt}
-                />
-              </div>
+              {/* AI Assistant - Only for Pro users */}
+              {subscriptionTier === 'Pro' && (
+                <div className="lg:col-span-1">
+                  <AIAssistant 
+                    onPromptSuggestion={handlePromptSuggestion}
+                    currentPrompt={prompt}
+                  />
+                </div>
+              )}
 
               {/* Main Form */}
-              <div className="lg:col-span-2">
+              <div className={subscriptionTier === 'Pro' ? "lg:col-span-2" : "lg:col-span-3"}>
                 <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
                   <div className="space-y-8">
                     {/* Prompt Input */}
@@ -232,6 +266,36 @@ const PromptInput = () => {
                         rows={3}
                       />
                     </div>
+
+                    {/* Privacy Setting - Only for Pro users */}
+                    {subscriptionTier === 'Pro' && (
+                      <div>
+                        <div className="flex items-center gap-2 mb-3">
+                          <label className="text-sm font-medium text-gray-300">Upload Privacy</label>
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Choose whether to upload to public gallery or keep private</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                        <Select value={uploadToPublic ? "public" : "private"} onValueChange={(value) => setUploadToPublic(value === "public")}>
+                          <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="bg-gray-900 border-gray-600">
+                            <SelectItem value="public" className="text-white hover:bg-gray-700">
+                              Upload to Public Gallery
+                            </SelectItem>
+                            <SelectItem value="private" className="text-white hover:bg-gray-700">
+                              Keep Private
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
 
                     {/* Style Selection */}
                     <div>

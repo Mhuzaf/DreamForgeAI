@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { User, LogOut, History, CreditCard } from 'lucide-react';
+import { User, LogOut, History, CreditCard, Settings } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useSubscription } from '../../contexts/SubscriptionContext';
 import { supabase } from '../../integrations/supabase/client';
@@ -106,20 +106,13 @@ const UserButton = ({ user, onLogin, onLogout, onMyCreations }: UserButtonProps)
                   My Creations
                 </button>
                 <button
-                  onClick={handleManagePayments}
-                  className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white w-full text-left"
-                >
-                  <CreditCard className="w-4 h-4 mr-3" />
-                  Manage Payments
-                </button>
-                <button
                   onClick={() => {
                     setIsSettingsOpen(true);
                     setIsDropdownOpen(false);
                   }}
                   className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white w-full text-left"
                 >
-                  <CreditCard className="w-4 h-4 mr-3" />
+                  <Settings className="w-4 h-4 mr-3" />
                   Settings
                 </button>
                 <button
