@@ -50,7 +50,6 @@ const Header = () => {
     { name: 'Pricing', href: '#pricing' },
     { name: 'About', href: '/about' },
     { name: 'Contact', href: '/contact' },
-    { name: 'My Creations', href: '/my-creations' },
   ];
 
   const scrollToPricing = (e: React.MouseEvent) => {

@@ -27,6 +27,8 @@ const SubscriptionPlans = () => {
         return;
       }
 
+      console.log('Creating checkout session for plan:', plan);
+      
       const { data, error } = await supabase.functions.invoke('create-checkout', {
         body: { plan },
         headers: {
@@ -34,12 +36,15 @@ const SubscriptionPlans = () => {
         },
       });
 
+      console.log('Checkout response:', { data, error });
+
       if (error) {
-        console.error('Checkout error:', error);
+        console.error('Checkout error details:', error);
         throw new Error(error.message || 'Failed to create checkout session');
       }
 
       if (data?.url) {
+        console.log('Redirecting to checkout URL:', data.url);
         window.open(data.url, '_blank');
         
         // Refresh subscription status after a delay
@@ -47,7 +52,7 @@ const SubscriptionPlans = () => {
           refreshSubscription();
         }, 3000);
       } else {
-        throw new Error('No checkout URL received');
+        throw new Error('No checkout URL received from server');
       }
     } catch (error) {
       console.error('Error creating checkout:', error);

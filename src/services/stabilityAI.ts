@@ -1,5 +1,5 @@
 
-const STABILITY_API_KEY = "sk-QgVSBwpSSAeVRhRvJOq7Y2VcTDARAntMbWWJePejpUuqwYHR";
+const STABILITY_API_KEY = "sk-w5A5OX2DVge5sVvM85pxX3apoTw9lGkX5M5V81hsUSO0Y2Xx";
 const STABILITY_API_URL = "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image";
 
 export interface StabilityImageParams {
