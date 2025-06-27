@@ -25,9 +25,15 @@ serve(async (req) => {
     const user = data.user;
     if (!user?.email) throw new Error("User not authenticated or email not available");
 
-    const { plan } = await req.json();
-    if (!plan || !["pro", "studio"].includes(plan)) {
-      throw new Error("Invalid plan specified");
+    const { priceId } = await req.json();
+    if (!priceId) {
+      throw new Error("Price ID is required");
+    }
+
+    // Validate price ID
+    const validPriceIds = ["price_1Rc84EBRyZcLVe9Y1fhjCoxS", "price_1Rc8DlBRyZcLVe9YxzqryocS"];
+    if (!validPriceIds.includes(priceId)) {
+      throw new Error("Invalid price ID specified");
     }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", { 
@@ -39,8 +45,6 @@ serve(async (req) => {
     if (customers.data.length > 0) {
       customerId = customers.data[0].id;
     }
-
-    const priceId = plan === "pro" ? "price_1Rc84EBRyZcLVe9Y1fhjCoxS" : "price_1Rc8DlBRyZcLVe9YxzqryocS";
 
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -56,7 +60,7 @@ serve(async (req) => {
       cancel_url: `${req.headers.get("origin")}/?canceled=true`,
       metadata: {
         user_id: user.id,
-        plan: plan,
+        price_id: priceId,
       },
     });
 
@@ -65,6 +69,7 @@ serve(async (req) => {
       status: 200,
     });
   } catch (error) {
+    console.error('Stripe checkout error:', error);
     return new Response(JSON.stringify({ error: error.message }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,

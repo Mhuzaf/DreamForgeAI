@@ -27,10 +27,12 @@ const SubscriptionPlans = () => {
         return;
       }
 
-      console.log('Creating checkout session for plan:', plan);
+      const priceId = plan === 'pro' ? 'price_1Rc84EBRyZcLVe9Y1fhjCoxS' : 'price_1Rc8DlBRyZcLVe9YxzqryocS';
+      
+      console.log('Creating checkout session for plan:', plan, 'with price ID:', priceId);
       
       const { data, error } = await supabase.functions.invoke('create-checkout', {
-        body: { plan },
+        body: { priceId },
         headers: {
           Authorization: `Bearer ${session.access_token}`,
         },
@@ -45,7 +47,7 @@ const SubscriptionPlans = () => {
 
       if (data?.url) {
         console.log('Redirecting to checkout URL:', data.url);
-        window.open(data.url, '_blank');
+        window.location.href = data.url;
         
         // Refresh subscription status after a delay
         setTimeout(() => {
@@ -57,8 +59,8 @@ const SubscriptionPlans = () => {
     } catch (error) {
       console.error('Error creating checkout:', error);
       toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "Failed to create checkout session. Please try again.",
+        title: "Payment Error",
+        description: error instanceof Error ? error.message : "Failed to start checkout process. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -259,9 +261,16 @@ const SubscriptionPlans = () => {
                   <Button
                     onClick={() => handleSubscribe(plan.id as 'pro' | 'studio')}
                     disabled={loading === plan.id}
-                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                    className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white shadow-lg hover:shadow-purple-500/25 transition-all duration-300 disabled:opacity-50"
                   >
-                    {loading === plan.id ? 'Processing...' : `Subscribe to ${plan.name}`}
+                    {loading === plan.id ? (
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                        Processing...
+                      </div>
+                    ) : (
+                      `Subscribe to ${plan.name}`
+                    )}
                   </Button>
                 )}
               </CardContent>
