@@ -5,7 +5,7 @@ import { Textarea } from './ui/textarea';
 import { Card, CardContent } from './ui/card';
 import { Wand2, Sparkles, Settings, Download, Heart, Share2, Crown } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
-import { generateImage } from '../services/stabilityAI';
+import { generateStabilityImage } from '../services/stabilityAI';
 import { useCredits } from '../contexts/CreditsContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
 import { useFeatureGate } from '../hooks/useFeatureGate';
@@ -18,7 +18,7 @@ const PromptInput = () => {
   const [showPrivateOption, setShowPrivateOption] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   const { toast } = useToast();
-  const { credits, useCredits } = useCredits();
+  const { credits, useCredits: consumeCredits } = useCredits();
   const { subscriptionTier } = useSubscription();
   const { featureAccess, checkFeature } = useFeatureGate();
 
@@ -41,7 +41,7 @@ const PromptInput = () => {
       return;
     }
 
-    if (!useCredits(1)) {
+    if (!consumeCredits(1)) {
       toast({
         title: "Not enough credits",
         description: "You need at least 1 credit to generate an image.",
@@ -53,23 +53,27 @@ const PromptInput = () => {
     setIsGenerating(true);
     
     try {
-      const imageUrl = await generateImage(prompt);
-      setGeneratedImage(imageUrl);
+      const images = await generateStabilityImage({ prompt });
+      const imageUrl = images[0]?.url;
       
-      // Show private upload option for Pro users
-      if (subscriptionTier === 'Pro' || subscriptionTier === 'Studio') {
-        setShowPrivateOption(true);
-      } else {
-        // Auto-upload to public gallery for Community users
-        await uploadToGallery(imageUrl, prompt, true);
+      if (imageUrl) {
+        setGeneratedImage(imageUrl);
+        
+        // Show private upload option for Pro users
+        if (subscriptionTier === 'Pro' || subscriptionTier === 'Studio') {
+          setShowPrivateOption(true);
+        } else {
+          // Auto-upload to public gallery for Community users
+          await uploadToGallery(imageUrl, prompt, true);
+        }
+        
+        toast({
+          title: "Image generated successfully!",
+          description: subscriptionTier === 'Pro' || subscriptionTier === 'Studio' 
+            ? "Choose to upload publicly or privately."
+            : "Uploaded to public gallery.",
+        });
       }
-      
-      toast({
-        title: "Image generated successfully!",
-        description: subscriptionTier === 'Pro' || subscriptionTier === 'Studio' 
-          ? "Choose to upload publicly or privately."
-          : "Uploaded to public gallery.",
-      });
     } catch (error) {
       toast({
         title: "Generation failed",
