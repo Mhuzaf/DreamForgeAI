@@ -1,521 +1,258 @@
 
 import { useState } from 'react';
-import { Wand2, Sparkles, HelpCircle, Moon, Sun } from 'lucide-react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { Slider } from './ui/slider';
-import { Input } from './ui/input';
-import { Textarea } from './ui/textarea';
 import { Button } from './ui/button';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
+import { Textarea } from './ui/textarea';
+import { Card, CardContent } from './ui/card';
+import { Wand2, Sparkles, Settings, Download, Heart, Share2, Crown } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
-import { useTheme } from '../contexts/ThemeContext';
+import { generateImage } from '../services/stabilityAI';
 import { useCredits } from '../contexts/CreditsContext';
 import { useSubscription } from '../contexts/SubscriptionContext';
-import { useSettings } from '../hooks/useSettings';
-import { generateStabilityImage, type GeneratedImage, type StabilityImageParams } from '../services/stabilityAI';
+import { useFeatureGate } from '../hooks/useFeatureGate';
 import { supabase } from '../integrations/supabase/client';
-import Gallery from './Gallery';
-import AIAssistant from './AIAssistant';
-import PromptHistory from './PromptHistory';
 
 const PromptInput = () => {
-  const { settings, updateSetting } = useSettings();
-  const { theme, toggleTheme } = useTheme();
-  const { credits, useCredits: consumeCredits } = useCredits();
-  const { subscriptionTier } = useSubscription();
-  const { toast } = useToast();
-  
-  const [prompt, setPrompt] = useState(settings.lastPrompt);
-  const [negativePrompt, setNegativePrompt] = useState(settings.negativePrompt);
+  const [prompt, setPrompt] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedImages, setGeneratedImages] = useState<GeneratedImage[]>([]);
-  const [uploadToPublic, setUploadToPublic] = useState(true);
+  const [generatedImage, setGeneratedImage] = useState<string | null>(null);
+  const [showPrivateOption, setShowPrivateOption] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
+  const { toast } = useToast();
+  const { credits, useCredits } = useCredits();
+  const { subscriptionTier } = useSubscription();
+  const { featureAccess, checkFeature } = useFeatureGate();
 
-  const calculateCreditsNeeded = () => {
-    const baseCredits = 1;
-    const resolutionMultiplier = parseInt(settings.resolution[0]) >= 1536 ? 2 : 1;
-    return baseCredits * settings.imageAmount[0] * resolutionMultiplier;
-  };
-
-  const handlePromptSuggestion = (suggestedPrompt: string) => {
-    setPrompt(suggestedPrompt);
-    updateSetting('lastPrompt', suggestedPrompt);
-  };
-
-  const buildStyledPrompt = (basePrompt: string, style: string) => {
-    const styleModifiers = {
-      'realistic': 'photorealistic, highly detailed, professional photography',
-      'anime': 'anime style, manga style, vibrant colors, cel shading',
-      '3d': '3D render, volumetric lighting, octane render, blender',
-      'sketch': 'pencil sketch, hand drawn, artistic sketch, line art',
-      'watercolor': 'watercolor painting, soft brush strokes, artistic medium',
-      'oil-painting': 'oil painting, classical art style, rich textures, painterly'
-    };
-
-    const modifier = styleModifiers[style as keyof typeof styleModifiers] || '';
-    return modifier ? `${basePrompt}, ${modifier}` : basePrompt;
-  };
-
-  const uploadToPublicGallery = async (image: GeneratedImage, originalPrompt: string) => {
-    try {
-      const { data: { session } } = await supabase.auth.getSession();
-      
-      if (!session) return;
-
-      await supabase.from('user_posts').insert({
-        user_id: session.user.id,
-        title: `AI Generated: ${originalPrompt.slice(0, 50)}...`,
-        description: 'Generated with AI',
-        image_url: image.url,
-        prompt_used: originalPrompt,
-        is_public: true,
-        likes_count: 0,
-        created_at: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Error uploading to public gallery:', error);
-    }
-  };
+  // Pro plan prompt suggestions
+  const promptSuggestions = [
+    "A majestic dragon soaring through storm clouds",
+    "Cyberpunk city at night with neon lights",
+    "Peaceful landscape with mountains and lakes",
+    "Abstract art with vibrant colors and geometric shapes",
+    "Fantasy castle on a floating island"
+  ];
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
       toast({
-        title: "Error",
-        description: "Please enter a prompt to generate images.",
+        title: "Please enter a prompt",
+        description: "Describe what you want to create.",
         variant: "destructive"
       });
       return;
     }
-    
-    const creditsNeeded = calculateCreditsNeeded();
-    if (!consumeCredits(creditsNeeded)) {
+
+    if (!useCredits(1)) {
       toast({
-        title: "Insufficient Credits",
-        description: `You need ${creditsNeeded} credits to generate this image. You have ${credits} credits remaining.`,
+        title: "Not enough credits",
+        description: "You need at least 1 credit to generate an image.",
         variant: "destructive"
       });
       return;
     }
 
-    // Build the styled prompt
-    const styledPrompt = buildStyledPrompt(prompt, settings.style);
-
-    // Save current prompt to settings
-    updateSetting('lastPrompt', prompt);
-    updateSetting('negativePrompt', negativePrompt);
-    
     setIsGenerating(true);
     
     try {
-      const imageParams: StabilityImageParams = {
-        prompt: styledPrompt,
-        negativePrompt: negativePrompt,
-        width: parseInt(settings.resolution[0]),
-        height: parseInt(settings.resolution[0]),
-        samples: settings.imageAmount[0],
-        cfgScale: settings.guidanceScale[0],
-        seed: settings.seed ? parseInt(settings.seed) : undefined
-      };
-
-      console.log('Generating images with params:', imageParams);
-      const newImages = await generateStabilityImage(imageParams);
+      const imageUrl = await generateImage(prompt);
+      setGeneratedImage(imageUrl);
       
-      // Upload to public gallery if not Pro plan or if user chose to upload publicly
-      if (subscriptionTier !== 'Pro' || uploadToPublic) {
-        for (const image of newImages) {
-          await uploadToPublicGallery(image, prompt);
-        }
+      // Show private upload option for Pro users
+      if (subscriptionTier === 'Pro' || subscriptionTier === 'Studio') {
+        setShowPrivateOption(true);
+      } else {
+        // Auto-upload to public gallery for Community users
+        await uploadToGallery(imageUrl, prompt, true);
       }
       
-      setGeneratedImages(prev => [...newImages, ...prev]);
-      setIsGenerating(false);
-      
       toast({
-        title: "Success!",
-        description: `Generated ${newImages.length} image${newImages.length > 1 ? 's' : ''} successfully.`
+        title: "Image generated successfully!",
+        description: subscriptionTier === 'Pro' || subscriptionTier === 'Studio' 
+          ? "Choose to upload publicly or privately."
+          : "Uploaded to public gallery.",
       });
     } catch (error) {
-      console.error('Image generation failed:', error);
-      setIsGenerating(false);
-      
-      // Refund credits on error
-      consumeCredits(-creditsNeeded);
-      
       toast({
-        title: "Generation Failed",
-        description: error instanceof Error ? error.message : "Failed to generate images. Please try again.",
+        title: "Generation failed",
+        description: "Failed to generate image. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const uploadToGallery = async (imageUrl: string, prompt: string, isPublic: boolean) => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      
+      if (!session) {
+        toast({
+          title: "Authentication required",
+          description: "Please log in to save your creation.",
+          variant: "destructive"
+        });
+        return;
+      }
+
+      const { error } = await supabase.from('user_posts').insert({
+        user_id: session.user.id,
+        title: prompt.slice(0, 50) + (prompt.length > 50 ? '...' : ''),
+        description: prompt,
+        image_url: imageUrl,
+        prompt_used: prompt,
+        is_public: isPublic,
+        created_at: new Date().toISOString()
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: isPublic ? "Uploaded to public gallery" : "Saved to your creations",
+        description: "Your image has been saved successfully.",
+      });
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast({
+        title: "Upload failed",
+        description: "Failed to save your creation.",
         variant: "destructive"
       });
     }
   };
 
-  const handleRegenerate = (regeneratePrompt: string) => {
-    setPrompt(regeneratePrompt);
-    updateSetting('lastPrompt', regeneratePrompt);
-    document.getElementById('prompt-section')?.scrollIntoView({ behavior: 'smooth' });
+  const handleUpload = async (isPublic: boolean) => {
+    if (generatedImage) {
+      await uploadToGallery(generatedImage, prompt, isPublic);
+      setShowPrivateOption(false);
+      setGeneratedImage(null);
+      setPrompt('');
+    }
   };
 
-  const styles = [
-    { value: 'realistic', label: 'Realistic' },
-    { value: 'anime', label: 'Anime' },
-    { value: '3d', label: '3D' },
-    { value: 'sketch', label: 'Sketch' },
-    { value: 'watercolor', label: 'Watercolor' },
-    { value: 'oil-painting', label: 'Oil Painting' }
-  ];
-
-  const resolutionOptions = [
-    { value: '512', label: '512×512' },
-    { value: '768', label: '768×768' },
-    { value: '1024', label: '1024×1024' },
-    { value: '1536', label: '1536×1536' },
-    { value: '2048', label: '2048×2048' }
-  ];
-
-  const examplePrompts = [
-    "A majestic dragon soaring through a stormy sky",
-    "Cyberpunk city at night with neon lights",
-    "A peaceful forest clearing with magical fireflies",
-    "Vintage car on a mountain road at sunset"
-  ];
+  const useSuggestion = (suggestion: string) => {
+    if (checkFeature('hasPromptSuggestions')) {
+      setPrompt(suggestion);
+    }
+  };
 
   return (
-    <>
-      <TooltipProvider>
-        <section id="prompt-section" className="py-20 px-4 sm:px-6 lg:px-8 bg-gradient-to-b from-black to-gray-900 dark:from-black dark:to-gray-900">
-          <div className="max-w-6xl mx-auto">
-            <div className="text-center mb-12">
-              <div className="flex justify-center items-center gap-4 mb-6">
-                <h2 className="text-4xl sm:text-5xl font-bold">
-                  <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                    Create Your Vision
-                  </span>
-                </h2>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={toggleTheme}
-                    className="border-gray-600 hover:bg-gray-700"
-                  >
-                    {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-                  </Button>
-                  <div className="bg-purple-600/20 px-3 py-1 rounded-full border border-purple-500/30">
-                    <span className="text-sm font-medium text-purple-400">{credits} credits</span>
-                  </div>
-                </div>
-              </div>
-              <p className="text-xl text-gray-300">
-                Describe what you want to see, and watch AI bring it to life
-              </p>
+    <section className="py-20 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-4xl mx-auto">
+        <div className="text-center mb-12">
+          <h2 className="text-4xl font-bold text-white mb-4">
+            Create Your <span className="bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">Masterpiece</span>
+          </h2>
+          <p className="text-xl text-gray-300">
+            Transform your imagination into stunning visual art
+          </p>
+        </div>
+
+        {/* Pro Plan Prompt Suggestions */}
+        {featureAccess.hasPromptSuggestions && (
+          <div className="mb-6">
+            <div className="flex items-center gap-2 mb-3">
+              <Crown className="w-4 h-4 text-purple-400" />
+              <span className="text-purple-400 font-medium">Pro Suggestions</span>
             </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-              {/* AI Assistant - Only for Pro users */}
-              {subscriptionTier === 'Pro' && (
-                <div className="lg:col-span-1">
-                  <AIAssistant 
-                    onPromptSuggestion={handlePromptSuggestion}
-                    currentPrompt={prompt}
-                  />
-                </div>
-              )}
-
-              {/* Main Form */}
-              <div className={subscriptionTier === 'Pro' ? "lg:col-span-2" : "lg:col-span-3"}>
-                <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 shadow-2xl border border-gray-700">
-                  <div className="space-y-8">
-                    {/* Prompt Input */}
-                    <div>
-                      <label htmlFor="prompt" className="block text-sm font-medium text-gray-300 mb-3">
-                        Enter your prompt
-                      </label>
-                      <div className="relative">
-                        <textarea
-                          id="prompt"
-                          value={prompt}
-                          onChange={(e) => setPrompt(e.target.value)}
-                          placeholder="Describe the image you want to create... Be creative and detailed!"
-                          className="w-full h-32 px-4 py-3 bg-gray-900/80 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none transition-all duration-200"
-                          maxLength={500}
-                        />
-                        <div className="absolute bottom-3 right-3 text-xs text-gray-500">
-                          {prompt.length}/500
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Negative Prompt */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-gray-300">Negative Prompt (Optional)</label>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Describe what you DON'T want in your image</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <Textarea
-                        value={negativePrompt}
-                        onChange={(e) => setNegativePrompt(e.target.value)}
-                        placeholder="blurry, low quality, distorted..."
-                        className="bg-gray-900/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                        rows={3}
-                      />
-                    </div>
-
-                    {/* Privacy Setting - Only for Pro users */}
-                    {subscriptionTier === 'Pro' && (
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <label className="text-sm font-medium text-gray-300">Upload Privacy</label>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Choose whether to upload to public gallery or keep private</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Select value={uploadToPublic ? "public" : "private"} onValueChange={(value) => setUploadToPublic(value === "public")}>
-                          <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-600">
-                            <SelectItem value="public" className="text-white hover:bg-gray-700">
-                              Upload to Public Gallery
-                            </SelectItem>
-                            <SelectItem value="private" className="text-white hover:bg-gray-700">
-                              Keep Private
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-
-                    {/* Style Selection */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-medium text-gray-300">Art Style</label>
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Choose the artistic style for your generated image</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </div>
-                      <Select value={settings.style} onValueChange={(value) => updateSetting('style', value)}>
-                        <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
-                          <SelectValue placeholder="Select a style" />
-                        </SelectTrigger>
-                        <SelectContent className="bg-gray-900 border-gray-600">
-                          {styles.map((styleOption) => (
-                            <SelectItem key={styleOption.value} value={styleOption.value} className="text-white hover:bg-gray-700">
-                              {styleOption.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
-                    {/* Advanced Controls */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Image Amount */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <label className="text-sm font-medium text-gray-300">Image Amount</label>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Number of images to generate (1-8)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <div className="space-y-2">
-                          <Slider
-                            value={settings.imageAmount}
-                            onValueChange={(value) => updateSetting('imageAmount', value)}
-                            max={8}
-                            min={1}
-                            step={1}
-                            className="w-full [&_[role=slider]]:bg-purple-600 [&_[role=slider]]:border-purple-600"
-                          />
-                          <div className="flex justify-between text-xs text-gray-500">
-                            <span>1</span>
-                            <span className="text-purple-400 font-medium">{settings.imageAmount[0]}</span>
-                            <span>8</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Resolution */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <label className="text-sm font-medium text-gray-300">Resolution</label>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Output image resolution (higher = better quality, more credits)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Select value={settings.resolution[0]} onValueChange={(value) => updateSetting('resolution', [value])}>
-                          <SelectTrigger className="bg-gray-900/80 border-gray-600 text-white hover:border-purple-500 transition-colors">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent className="bg-gray-900 border-gray-600">
-                            {resolutionOptions.map((res) => (
-                              <SelectItem key={res.value} value={res.value} className="text-white hover:bg-gray-700">
-                                {res.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-
-                      {/* Guidance Scale */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <label className="text-sm font-medium text-gray-300">Guidance Scale</label>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>How closely to follow the prompt (higher = more strict)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <div className="space-y-2">
-                          <Slider
-                            value={settings.guidanceScale}
-                            onValueChange={(value) => updateSetting('guidanceScale', value)}
-                            max={20}
-                            min={1}
-                            step={0.5}
-                            className="w-full [&_[role=slider]]:bg-purple-600 [&_[role=slider]]:border-purple-600"
-                          />
-                          <div className="flex justify-between text-xs text-gray-500">
-                            <span>1.0</span>
-                            <span className="text-purple-400 font-medium">{settings.guidanceScale[0]}</span>
-                            <span>20.0</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Seed */}
-                      <div>
-                        <div className="flex items-center gap-2 mb-3">
-                          <label className="text-sm font-medium text-gray-300">Seed (Optional)</label>
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <HelpCircle className="w-4 h-4 text-gray-500 hover:text-purple-400 transition-colors" />
-                            </TooltipTrigger>
-                            <TooltipContent>
-                              <p>Seed for reproducible results (leave empty for random)</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </div>
-                        <Input
-                          value={settings.seed}
-                          onChange={(e) => updateSetting('seed', e.target.value)}
-                          placeholder="Enter seed number..."
-                          className="bg-gray-900/80 border-gray-600 text-white placeholder-gray-400 focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Credits Display and Generate Button */}
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between text-sm text-gray-400">
-                        <span>Credits needed: {calculateCreditsNeeded()}</span>
-                        <span>Credits available: {credits}</span>
-                      </div>
-                      
-                      <Button
-                        onClick={handleGenerate}
-                        disabled={!prompt.trim() || isGenerating || credits < calculateCreditsNeeded()}
-                        className="w-full flex items-center justify-center px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 transform hover:scale-105 shadow-lg"
-                      >
-                        {isGenerating ? (
-                          <>
-                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                            Generating...
-                          </>
-                        ) : (
-                          <>
-                            <Wand2 className="mr-2 w-5 h-5" />
-                            Generate Image
-                          </>
-                        )}
-                      </Button>
-                    </div>
-
-                    {/* Loading Animation */}
-                    {isGenerating && (
-                      <div className="mt-6 animate-fade-in">
-                        <div className="bg-gray-900/80 rounded-lg p-6 border border-gray-700">
-                          <div className="flex items-center space-x-3 mb-4">
-                            <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                            <span className="text-white font-medium">Creating your masterpiece with Stability AI...</span>
-                          </div>
-                          <div className="w-full bg-gray-700 rounded-full h-2">
-                            <div className="bg-gradient-to-r from-purple-500 to-pink-500 h-2 rounded-full animate-pulse" style={{ width: '75%' }}></div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Prompt History */}
-            <div className="mb-8">
-              <PromptHistory 
-                onPromptSelect={handlePromptSuggestion}
-                currentPrompt={prompt}
-              />
-            </div>
-
-            {/* Example prompts */}
-            <div className="mt-12">
-              <h3 className="text-2xl font-semibold text-white mb-6 text-center">
-                Need inspiration? Try these examples:
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {examplePrompts.map((example, index) => (
-                  <button
-                    key={index}
-                    onClick={() => {
-                      setPrompt(example);
-                      updateSetting('lastPrompt', example);
-                    }}
-                    className="text-left p-4 bg-gray-800/30 border border-gray-700 rounded-lg hover:bg-gray-700/50 hover:border-purple-500 transition-all duration-200 group"
-                  >
-                    <span className="text-gray-300 group-hover:text-white transition-colors duration-200">
-                      "{example}"
-                    </span>
-                  </button>
-                ))}
-              </div>
+            <div className="flex flex-wrap gap-2">
+              {promptSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => useSuggestion(suggestion)}
+                  className="px-3 py-1 bg-purple-600/20 text-purple-300 rounded-full text-sm hover:bg-purple-600/30 transition-colors"
+                >
+                  {suggestion}
+                </button>
+              ))}
             </div>
           </div>
-        </section>
-      </TooltipProvider>
+        )}
 
-      <Gallery images={generatedImages} onRegenerate={handleRegenerate} />
-    </>
+        <Card className="bg-gray-800 border-gray-700">
+          <CardContent className="p-6">
+            <div className="space-y-4">
+              <Textarea
+                placeholder="Describe the image you want to create... (e.g., A mystical forest with glowing mushrooms)"
+                value={prompt}
+                onChange={(e) => setPrompt(e.target.value)}
+                className="min-h-[120px] bg-gray-700 border-gray-600 text-white placeholder-gray-400 resize-none"
+              />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="flex items-center space-x-2 text-gray-300">
+                    <Sparkles className="w-4 h-4" />
+                    <span className="text-sm">
+                      {subscriptionTier === 'Studio' ? 'Unlimited' : `${credits} credits remaining`}
+                    </span>
+                  </div>
+                  {(subscriptionTier === 'Pro' || subscriptionTier === 'Studio') && (
+                    <div className="flex items-center space-x-2 text-purple-400">
+                      <Crown className="w-4 h-4" />
+                      <span className="text-sm">HD Quality • AI Assistant</span>
+                    </div>
+                  )}
+                </div>
+                
+                <Button
+                  onClick={handleGenerate}
+                  disabled={isGenerating || !prompt.trim() || (subscriptionTier !== 'Studio' && credits < 1)}
+                  className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white px-8 py-2 rounded-lg font-medium transition-all duration-300 disabled:opacity-50"
+                >
+                  {isGenerating ? (
+                    <div className="flex items-center space-x-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Generating...</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center space-x-2">
+                      <Wand2 className="w-4 h-4" />
+                      <span>Generate</span>
+                    </div>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Generated Image Display */}
+        {generatedImage && (
+          <Card className="mt-6 bg-gray-800 border-gray-700">
+            <CardContent className="p-6">
+              <div className="text-center">
+                <img
+                  src={generatedImage}
+                  alt="Generated artwork"
+                  className="max-w-full h-auto rounded-lg mx-auto mb-4"
+                />
+                
+                {showPrivateOption ? (
+                  <div className="flex justify-center space-x-4">
+                    <Button
+                      onClick={() => handleUpload(true)}
+                      className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded-lg"
+                    >
+                      <Share2 className="w-4 h-4 mr-2" />
+                      Upload to Public Gallery
+                    </Button>
+                    <Button
+                      onClick={() => handleUpload(false)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg"
+                    >
+                      <Heart className="w-4 h-4 mr-2" />
+                      Save Privately
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-green-400">✓ Uploaded to public gallery</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    </section>
   );
 };
 
